@@ -3,50 +3,67 @@ open Printf
 let args = List.tl (Array.to_list Sys.argv);;
 
 (*
-    Helper function for parentheses_balanced.
+Terminology:
 
-    Note:
-        Due to laziness return case 2, this is not strictly a parentheses counter.
+    order-pair (For lack of better word) is a pair
+    of characters (fst, snd) whose appearance in
+    a string adheres to the following conditions:
+
+      1. On scanning from left to right, the first of
+         the pair appears at least once for each of the second.
+
+      2. The number of appearances of each is equal.
+*)
+
+(*
+    Helper function for ordered_pair_balanced.
+
+    Arguments:
+        str: String being checked
+        ind: index of current character being evaluated
+        counter: order-pair counter
+        fst: first char of order-pair
+        snd: second char of order-pair
 
     returns an int 'n':
         - n>0 if there are more opens '('.
         - n<0 if there are more closes ')', or one appears before it's open.
         - n==0 if all parentheses can be paired in correct order.
 *)
-let rec paren_checker xs i n =
-    if (String.length xs) <= i || n < 0 then n
+let rec ordered_pair_checker str i counter fst snd =
+    if (String.length str) <= i || counter < 0 then counter
     else
-        let c = xs.[i]
-        and i = i+1 in
-        (*printf "%i\n" n;*)
-        if c == '(' then paren_checker xs i (n+1)
+        let c = str.[i]
+        and i = i + 1 in
+        (*printf "%i\n" counter;*)
+        if c = fst then ordered_pair_checker str i (counter + 1) fst snd
         else
-            if c == ')' then paren_checker xs i (n-1)
-            else paren_checker xs i n
+            if c = snd then ordered_pair_checker str i (counter - 1) fst snd
+            else ordered_pair_checker str i counter fst snd;;
 
-(* Returns true if input has balanced parentheses, else false *)
-let parentheses_balanced (* ... as all things should be*) str =
-    if (paren_checker str 0 0) == 0 then true
-    else false
+(* Returns true if input has balanced order-pairs, else false *)
+let ordered_pair_balanced (* ... as all things should be*) str fst snd =
+    if (ordered_pair_checker str 0 0 fst snd) == 0 then true
+    else false;;
 
 (* Iterates over each argument supplied to the program *)
-let rec loop xs =
-    if xs == [] then () (* Return nothing *)
+let rec loop fst snd xs =
+    if xs = [] then () (* Return nothing *)
     else (* Display arg and recurse *)
         let str = sprintf "%s" (List.hd xs) in
-        let balanced = parentheses_balanced str in
-        if balanced then printf "%s is balanced!" str
-        else printf "%s is not balanced" str;
-        loop (List.tl xs);; (* Move on to the next argument provided *)
+        let balanced = ordered_pair_balanced str fst snd in
+        if balanced then printf "\"%s\" is balanced!\n" str
+        else printf "\"%s\" is NOT balanced!\n" str;
+        loop fst snd (List.tl xs);; (* Move on to the next argument provided *)
 
 (* -- Testing -- *)
 
 let rec tests cases expected =
-    if List.length cases == 0 then ()
+    if List.length cases = 0 then ()
     else
-        let result = parentheses_balanced (List.hd cases) in
-        printf "%s : %b\n" (List.hd cases) result;
-        assert (result == expected);
+        let result = ordered_pair_balanced (List.hd cases) '(' ')' in
+        printf "\"%s\" : %b\n" (List.hd cases) result;
+        assert (result = expected);
         tests (List.tl cases) expected;;
 
 let cases_balanced =
@@ -72,8 +89,18 @@ let run_tests () =
 
 (* -- Main -- *)
 
+let arg1 = List.hd args;;
+let listargs = Array.of_list args;;
+let arg_count = List.length args;;
+let testrun = arg1 = "-test";;
+
 let () =
-    if (List.length args) == 1 && (List.hd args) == "-test" then
-        run_tests ()
+    if (arg_count = 1) then
+        if testrun then run_tests ()
+        else loop '(' ')' args
     else
-        loop args;;
+        if arg_count = 3 then
+           let fst = listargs.(0).[0] in
+           let snd = listargs.(1).[0] in
+           printf ("Using fst: %c and snd: %c\n") fst snd;
+           loop fst snd (List.tl (List.tl args));;
