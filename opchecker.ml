@@ -1,8 +1,5 @@
 open Printf
 
-(* Store arguments in a list. Why? For fun *)
-let args = List.tl (Array.to_list Sys.argv);;
-
 (*
 Terminology:
 
@@ -107,16 +104,23 @@ let run_tests () =
 
 (* -- Main -- *)
 
-let arg1 = List.hd args;;
+(* Store arguments in a list. Why? For fun *)
+let args = List.tl (Array.to_list Sys.argv);;
+
 let listargs = Array.of_list args;;
 let arg_count = List.length args;;
-let testrun = arg1 = "-test";;
+let testrun = (arg_count = 1) && (List.hd args = "-test");;
 
 let custom_pair_check () =
     let fst = listargs.(0).[0] in
     let snd = listargs.(1).[0] in
     printf ("Using fst: %c and snd: %c\n") fst snd;
     loop fst snd (List.tl (List.tl args));;
+
+(* TODO: flag `-c`: for concatenating each individual argument into a single string
+                    to allow for spaces without a pair of quotes ""
+               `-p`: for setting the order-pair used (Ex: `-p {}`)
+               `--help`: for displaying usage info, like this comment! *)
 
 let rec main () =
     match arg_count with
@@ -125,6 +129,7 @@ let rec main () =
             then run_tests ()
             else loop '(' ')' args
         | 3 -> custom_pair_check () (* Can `let .. in ...` go in a pattern match result?*)
-        | _ -> ();;
+        | _ -> print_endline "[Warning] opchecker requires the user to supply 1 or 3 text arguments";;
+        (* TODO: Show usage details on prev line (Replace print_endline with content shown on flag `--help`) *)
 
 main ()
