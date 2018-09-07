@@ -1,5 +1,6 @@
 open Printf
 
+(* Store arguments in a list. Why? For fun *)
 let args = List.tl (Array.to_list Sys.argv);;
 
 (*
@@ -62,7 +63,7 @@ let rec tests cases expected =
     if List.length cases = 0 then true
     else
         let result = ordered_pair_balanced (List.hd cases) '(' ')' in
-        printf "\"%s\" : %b\n" (List.hd cases) result;
+        (*printf "\"%s\" : %b\n" (List.hd cases) result;*)
         assert (result = expected);
         if (result != expected) then false
         else tests (List.tl cases) expected;;
@@ -94,15 +95,15 @@ let cases_unbalanced =
 let run_tests () =
     let tcs1 = tests cases_balanced true in
     let tcs1name = "Balanced Test Cases" in
-    if tcs1 then printf "\n-- %s PASSED\n" tcs1name
-    else printf "\n-- %s FAILED\n" tcs1name;
+    if tcs1 then printf "-- %s - PASSED\n" tcs1name
+    else printf "-- %s - FAILED\n" tcs1name;
 
     let tcs2 = tests cases_unbalanced false in
     let tcs2name = "Unbalanced Test Cases" in
-    if tcs1 then
-        printf "\n-- %s PASSED\n" tcs2name
+    if tcs2 then
+        printf "-- %s - PASSED\n" tcs2name
     else
-        printf "\n-- %s FAILED\n" tcs2name;;
+        printf "-- %s - FAILED\n" tcs2name;;
 
 (* -- Main -- *)
 
@@ -111,13 +112,29 @@ let listargs = Array.of_list args;;
 let arg_count = List.length args;;
 let testrun = arg1 = "-test";;
 
-let () =
-    if (arg_count = 1) then
-        if testrun then run_tests ()
-        else loop '(' ')' args
-    else
-        if arg_count = 3 then
-           let fst = listargs.(0).[0] in
-           let snd = listargs.(1).[0] in
-           printf ("Using fst: %c and snd: %c\n") fst snd;
-           loop fst snd (List.tl (List.tl args));;
+let custom_pair_check () =
+    let fst = listargs.(0).[0] in
+    let snd = listargs.(1).[0] in
+    printf ("Using fst: %c and snd: %c\n") fst snd;
+    loop fst snd (List.tl (List.tl args));;
+
+let test_or_single () =
+    if testrun
+    then run_tests ()
+    else loop '(' ')' args;;
+
+(* Continuations can be fancy!*)
+(* Credit to the answer of: https://stackoverflow.com/questions/28515699/write-pretty-multilevel-nested-if-then-else-code-in-ocaml/28517106 *)
+let rec main () =
+    if arg_count = 0
+    then ()
+    else case2 ();
+and case2 () =
+    if arg_count = 1
+    then test_or_single ()
+    else case3 ();
+and case3 () =
+    if arg_count = 3
+    then custom_pair_check ();;
+
+main ()
