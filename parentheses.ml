@@ -59,18 +59,24 @@ let rec loop fst snd xs =
 (* -- Testing -- *)
 
 let rec tests cases expected =
-    if List.length cases = 0 then ()
+    if List.length cases = 0 then true
     else
         let result = ordered_pair_balanced (List.hd cases) '(' ')' in
         printf "\"%s\" : %b\n" (List.hd cases) result;
         assert (result = expected);
-        tests (List.tl cases) expected;;
+        if (result != expected) then false
+        else tests (List.tl cases) expected;;
 
 let cases_balanced =
     "()"::
     "(())"::
     "()()"::
-    "((()))"::[];;
+    "((()))"::
+    "(xyz)"::
+    "(        )"::
+    "( c s   y   () ...)"::
+    "(abcdefghijklmnopqrstuvwxyz!@#$%^&*()_+=-0987654321)"::
+    "(\t\n\t)"::[];;
 
 let cases_unbalanced =
     "("::
@@ -81,11 +87,22 @@ let cases_unbalanced =
     ")))))"::
     "(())())"::
     ")("::
-    ")"::[];;
+    ")"::
+    "\t)\n"::
+    "(\t\t("::[];;
 
 let run_tests () =
-    tests cases_balanced true;
-    tests cases_unbalanced false;;
+    let tcs1 = tests cases_balanced true in
+    let tcs1name = "Balanced Test Cases" in
+    if tcs1 then printf "\n-- %s PASSED\n" tcs1name
+    else printf "\n-- %s FAILED\n" tcs1name;
+
+    let tcs2 = tests cases_unbalanced false in
+    let tcs2name = "Unbalanced Test Cases" in
+    if tcs1 then
+        printf "\n-- %s PASSED\n" tcs2name
+    else
+        printf "\n-- %s FAILED\n" tcs2name;;
 
 (* -- Main -- *)
 
