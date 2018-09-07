@@ -118,23 +118,13 @@ let custom_pair_check () =
     printf ("Using fst: %c and snd: %c\n") fst snd;
     loop fst snd (List.tl (List.tl args));;
 
-let test_or_single () =
-    if testrun
-    then run_tests ()
-    else loop '(' ')' args;;
-
-(* Continuations can be fancy!*)
-(* Credit to the answer of: https://stackoverflow.com/questions/28515699/write-pretty-multilevel-nested-if-then-else-code-in-ocaml/28517106 *)
 let rec main () =
-    if arg_count = 0
-    then ()
-    else case2 ();
-and case2 () =
-    if arg_count = 1
-    then test_or_single ()
-    else case3 ();
-and case3 () =
-    if arg_count = 3
-    then custom_pair_check ();;
+    match arg_count with
+        | 1 ->
+            if testrun
+            then run_tests ()
+            else loop '(' ')' args
+        | 3 -> custom_pair_check () (* Can `let .. in ...` go in a pattern match result?*)
+        | _ -> ();;
 
 main ()
