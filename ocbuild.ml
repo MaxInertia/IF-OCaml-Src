@@ -14,8 +14,8 @@ let local_modules = [
     "ocbuild";
 ];;
 
-let executable_name = "app" (* TODO: Handle case where file already exists *)
-
+let build_dir = "build";;
+let executable_name = "app";; (* TODO: Handle case where file already exists *)
 let verbose = false;; (* Set this with a flag *)
 
 type strings = string list;;
@@ -34,6 +34,14 @@ let files_ml = append_to_each local_modules ".ml";;
 let files_cmx = append_to_each local_modules ".cmx";;
 let files_cmi = append_to_each local_modules ".cmi";;
 let files_o = append_to_each local_modules ".o";;
+let rec merge_all_lists xss =
+    let ll_zero x y = 0 in
+    match xss with
+        | [] -> []
+        | xs :: [] -> xs
+        | xs :: ys :: rem -> merge_all_lists (
+            (List.merge (ll_zero) xs ys) :: rem);;
+let intermediate_build_files = merge_all_lists [files_o; files_cmi; files_cmx];;
 
 (*
  * Single string containing the compiled
@@ -50,24 +58,14 @@ let link binary = Bsh.exec (sprintf "ocamlopt -o %s %s" executable_name binary);
 (*
  * Delete intermediate build files (.cmx and .cmi)
  *)
-let clean files =
-    List.iter (fun file ->
-        match (verbose, Bsh.rm_safe file) with
+let clean files = Bsh.rm build_dir;;
+    (*List.iter (fun file ->
+        match (verbose, Bsh.rm_safe (build_dir ^"/"^ file)) with
             | (false, _) -> ();
             | (true, 1) -> printf "File not found: %s\n" file;
             | (true, 0) -> printf "rm %s\n" file
             | _ -> print_endline "unknown issue in isle 12 (ocbuild.clean)\n"
-    ) files;;
-
-let rec merge_all_lists xss =
-    let ll_zero x y = 0 in
-    match xss with
-        | [] -> []
-        | xs :: [] -> xs
-        | xs :: ys :: rem -> merge_all_lists (
-            (List.merge (ll_zero) xs ys) :: rem);;
-
-(* - Main - *)
+    ) files;;*)
 
 (* TODO: Parse flags from Sys.argv *)
 
@@ -81,8 +79,26 @@ and compile_loop files =
     then ignore (compile_loop (List.tl files))
     else ( link_all (); )
 and link_all () =
-    ignore (link cmx_string);;
+    ignore (link cmx_string);
+    Bsh.rm "build";
+    organize_files intermediate_build_files
+and organize_files files =
+    if List.length files > 1
+    then
+        let file = List.hd files in
+        Bsh.mv file (build_dir ^"/"^ file);
+        organize_files (List.tl files);;
 
-if Array.length Sys.argv > 1 && Sys.argv.(1) = "clean"
-then clean ( merge_all_lists [files_o; files_cmi; files_cmx] )
-else compile_and_link files_ml;;
+
+(* - Main - *)
+let rec main () =
+    let warning = printf "Warning: OCBuild has not been tested on %s" Sys.os_type in
+    match Sys.os_type with
+    | "Unix" | "Cygwin" | "MacOS" -> warning
+    | "Win32" -> ()
+    | _ -> print_endline "Unknown system type";
+    if Array.length Sys.argv > 1 && Sys.argv.(1) = "clean"
+    then clean intermediate_build_files
+    else compile_and_link files_ml;;
+
+main ()
