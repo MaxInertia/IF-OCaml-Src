@@ -9,12 +9,7 @@ end;; open Flag;; *)
     | UniFlag of string
     | ArgFlag of string * string;;*)
 
-module Flag : sig
-    type t =
-        | UniFlag of string
-        | ArgFlag of string * string
-    val compare : t -> t -> int
-end = struct
+module Flag = struct
     type t =
         | UniFlag of string
         | ArgFlag of string * string
@@ -35,24 +30,24 @@ open Flag;;
 module FlagSet =
     Set.Make(Flag);;
 
-let rec start_parsing args =
-    parse_fs 0 FlagSet.empty args;
-and parse_fs i acc args =
+let rec parse_flags args =
+    parse_loop 0 FlagSet.empty args;
+and parse_loop i acc args =
     if Array.length args > i
     then parse_current_arg i acc args
     else acc; (* return accumulator *)
 and parse_current_arg i acc args =
     if args.(i).[0] = '-'
     then parse_flag i acc args (* parse this flag *)
-    else parse_fs (i + 1) acc args; (* move on to next argument *)
+    else parse_loop (i + 1) acc args; (* move on to next argument *)
 and parse_flag i acc args =
     let has_next = Array.length args > (i + 1) in
     if has_next && args.(i + 1).[0] != '-'
-    then parse_fs (i + 1) (
-            FlagSet.add (*args.(i)*) (ArgFlag (args.(i), args.(i + 1))) acc
+    then parse_loop (i + 1) (
+            FlagSet.add (ArgFlag (args.(i), args.(i + 1))) acc
          ) args (* recurse with acc + new flag&value *)
-    else parse_fs (i + 1) (
-            FlagSet.add (*args.(i)*) (UniFlag args.(i)) acc
+    else parse_loop (i + 1) (
+            FlagSet.add (UniFlag args.(i)) acc
          ) args;; (* recure with acc + new flag *)
 
 let flag_to_string flag =
@@ -69,11 +64,11 @@ let rec print_flags flags =
         fun e -> printf "%s\n" (flag_to_string e)
     ) flags;;
 
-(*let flags = start_parsing xs;;*)
+(*let flags = parse_flags xs;;*)
 
 (* ------- *)
 
-let flags = start_parsing Sys.argv;;
+let flags = parse_flags Sys.argv;;
 
 if FlagSet.is_empty flags
 then
