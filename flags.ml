@@ -1,30 +1,59 @@
 open Printf
 
-(*
-module Flag = struct
+(* module Flag = struct
     type t = { id: string; value: string; }
     let compare = compare
-end;; open Flag;;
+end;; open Flag;; *)
 
-module FlagsMap =
-    Map.Make(Flag);;
-*)
+(*type flag =
+    | UniFlag of string
+    | ArgFlag of string * string;;*)
+
+module Flag : sig
+    type t =
+        | UniFlag of string 
+        | ArgFlag of string * string
+    val compare : t -> t -> int
+end = struct
+    type t =
+        | UniFlag of string
+        | ArgFlag of string * string
+    let compare x y =
+        match (x, y) with
+        | (UniFlag a, UniFlag b) ->
+            if a = b
+            then 0
+            else 1
+        | (ArgFlag (a,b), ArgFlag (c,d)) ->
+            if a = c && b = d
+            then 0
+            else 1
+        | _ -> 1;;
+end;;
+open Flag;;
 
 module FlagMap =
-    Map.Make(String);;
+    Map.Make(Flag);;
 
-(*FlagsMap.(empty |> add "A" "B");;*)
-(*let ref flagmap =
-    FlagsMap.empty;;*)
+(* FlagsMap.(empty |> add "A" "B");; *)
 
+(* Try continuation passing here? *)
 let rec parse_flags ?(index=0) ?(acc=FlagMap.empty) args =
     let candidate = args.(index) in
     if Array.length args > (index + 1) then
         if candidate.[0] = '-' then
-            parse_flags
-                ~index:(index + 1)
-                ~acc:(FlagMap.add candidate args.(index + 1) acc)
-                args
+            if args.(index + 1).[0] = '-' then
+                let flag = UniFlag candidate in
+                parse_flags
+                    ~index:(index + 1)
+                    ~acc:(FlagMap.add flag acc)
+                    args
+            else
+                let flag = ArgFlag (candidate, args.(index+1)) in
+                parse_flags
+                    ~index:(index + 1)
+                    ~acc:(FlagMap.add flag acc)
+                    args
         else parse_flags
                 ~index:(index + 1)
                 ~acc:acc
