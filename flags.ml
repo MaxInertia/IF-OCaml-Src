@@ -32,52 +32,52 @@ end = struct
 end;;
 open Flag;;
 
-module FlagMap =
-    Map.Make(Flag);;
-
-let empty_flag_map = FlagMap.empty;;
-
-let uni_flag = UniFlag "-a";;
-let uni_flag2 = UniFlag Sys.argv.(0);;
-let arg_flag = ArgFlag ("-a", "true");;
-
-let map_with_stuff = FlagMap.add uni_flag uni_flag empty_flag_map;;
+module FlagSet =
+    Set.Make(Flag);;
 
 let rec start_parsing args =
-    parse_fs 0 FlagMap.empty args;
+    parse_fs 0 FlagSet.empty args;
 and parse_fs i acc args =
-    let candidate = args.(i) in
-    if Array.length args > (i + 1)
+    if Array.length args > i
     then parse_current_arg i acc args
-    else acc;
+    else acc; (* return accumulator *)
 and parse_current_arg i acc args =
     if args.(i).[0] = '-'
-    then parse_flag i acc args
-    else parse_fs (i + 1) acc args;
+    then parse_flag i acc args (* parse this flag *)
+    else parse_fs (i + 1) acc args; (* move on to next argument *)
 and parse_flag i acc args =
-    if args.(i + 1).[0] = '-'
+    let has_next = Array.length args > (i + 1) in
+    if has_next && args.(i + 1).[0] != '-'
     then parse_fs (i + 1) (
-            FlagMap.add (*args.(i)*) uni_flag (ArgFlag (args.(i), args.(i + 1))) acc
-         ) args
+            FlagSet.add (*args.(i)*) (ArgFlag (args.(i), args.(i + 1))) acc
+         ) args (* recurse with acc + new flag&value *)
     else parse_fs (i + 1) (
-            FlagMap.add (*args.(i)*) uni_flag (UniFlag args.(i)) acc
-         ) args;;
+            FlagSet.add (*args.(i)*) (UniFlag args.(i)) acc
+         ) args;; (* recure with acc + new flag *)
 
-let xs = [| "a"; "b"; "-f"; "true"; "apples"; "-c"; "camera!"; |];;
+let flag_to_string flag =
+    match flag with
+    | UniFlag f -> f
+    | ArgFlag (f, a) -> f ^" "^ a;;
 
-start_parsing xs;;
+(* Testing *)
 
-(*
+let xs = [| "b"; "-f"; "true"; "apples"; "--version"; "-c"; "camera!"; |];;
+
 let rec print_flags flags =
-    FlagMap.iter (
-        fun k v -> printf "(%s:\t%s)\n" k v
+    FlagSet.iter (
+        fun e -> printf "%s\n" (flag_to_string e)
     ) flags;;
 
-let fas = parse_flags Sys.argv;;
-if FlagMap.is_empty fas = true
+(*let flags = start_parsing xs;;*)
+
+(* ------- *)
+
+let flags = start_parsing Sys.argv;;
+
+if FlagSet.is_empty flags
 then
     print_endline "No flags!"
 else
     print_endline "flag\tvalue";
-    print_flags fas;;
-*)
+    print_flags flags;;
