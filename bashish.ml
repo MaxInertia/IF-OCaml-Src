@@ -1,6 +1,6 @@
 open Printf
 
-let mv oldpath newpath =
+let mv ?force:(f=false) oldpath newpath =
     let old_exists = Sys.file_exists oldpath
     and new_exists = Sys.file_exists newpath
     and err = Printf.printf "Error: File \"%s\" not found.\n"
